@@ -102,13 +102,13 @@ function normalizeHeaders(headers) {
     if (Array.isArray(value)) {
       const cleaned = value
         .map((entry) => normalizeHeaderValue(entry))
-        .filter((entry) => entry !== undefined && entry !== null);
+        .filter((entry) => entry !== null);
       if (cleaned.length > 0) {
         normalized[normalizedKey] = cleaned;
       }
     } else {
       const cleanedValue = normalizeHeaderValue(value);
-      if (cleanedValue === undefined || cleanedValue === null) {
+      if (cleanedValue === null) {
         continue;
       }
       normalized[normalizedKey] = cleanedValue;
