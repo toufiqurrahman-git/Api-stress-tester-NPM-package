@@ -1,6 +1,7 @@
 /**
  * Tests for the HttpEngine (undici connection pooling).
  */
+import { jest } from '@jest/globals';
 import { HttpEngine } from '../src/core/httpEngine.js';
 
 describe('HttpEngine', () => {
@@ -80,19 +81,20 @@ describe('HttpEngine', () => {
       headers: {},
       body: { text: async () => '' },
     });
-    const originalWrite = process.stderr.write;
     const writes = [];
-    process.stderr.write = (...args) => {
-      writes.push(String(args[0]));
-      return true;
-    };
+    const writeSpy = jest
+      .spyOn(process.stderr, 'write')
+      .mockImplementation((...args) => {
+        writes.push(String(args[0]));
+        return true;
+      });
 
     try {
       await engine.request({
         headers: { 'X-Invalid': { nested: true } },
       });
     } finally {
-      process.stderr.write = originalWrite;
+      writeSpy.mockRestore();
       await engine.close();
     }
 

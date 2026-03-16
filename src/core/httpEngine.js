@@ -34,7 +34,7 @@ export class HttpEngine {
     this.baseUrl = baseUrl;
     this.defaultHeaders = headers;
     this.timeout = timeout;
-    this.warnedHeaderValues = { map: new Map(), queue: [] };
+    this.invalidHeaderWarningCache = { map: new Map(), queue: [] };
 
     this.pool = new Pool(baseUrl, {
       connections,
@@ -59,7 +59,7 @@ export class HttpEngine {
   async request({ method = 'GET', path = '/', headers = {}, body = null } = {}) {
     const mergedHeaders = normalizeHeaders(
       { ...this.defaultHeaders, ...headers },
-      this.warnedHeaderValues,
+      this.invalidHeaderWarningCache,
     );
 
     const start = process.hrtime.bigint();
@@ -96,7 +96,7 @@ export class HttpEngine {
   }
 }
 
-function normalizeHeaders(headers, warnedHeaderValues) {
+function normalizeHeaders(headers, warningCache) {
   const normalized = {};
   for (const [key, value] of Object.entries(headers || {})) {
     if (value === undefined || value === null) {
@@ -118,7 +118,7 @@ function normalizeHeaders(headers, warnedHeaderValues) {
             cleaned.push(cleanedEntry);
           }
         } else {
-          warnInvalidHeaderValue(normalizedKey, entry, warnedHeaderValues);
+          warnInvalidHeaderValue(normalizedKey, entry, warningCache);
         }
       }
       if (cleaned.length > 0) {
@@ -128,7 +128,7 @@ function normalizeHeaders(headers, warnedHeaderValues) {
     }
 
     if (!isValidHeaderValue(value)) {
-      warnInvalidHeaderValue(normalizedKey, value, warnedHeaderValues);
+      warnInvalidHeaderValue(normalizedKey, value, warningCache);
       continue;
     }
 
@@ -168,19 +168,19 @@ function isValidHeaderValue(value) {
   );
 }
 
-function warnInvalidHeaderValue(key, value, warnedHeaderValues) {
+function warnInvalidHeaderValue(key, value, warningCache) {
   const type = typeof value;
   const safeKey = key.replace(CONTROL_CHARS_REGEX, '');
-  const signature = `${safeKey}:${type}`;
-  if (warnedHeaderValues.map.has(signature)) {
+  const signature = `${safeKey}\0${type}`;
+  if (warningCache.map.has(signature)) {
     return;
   }
-  warnedHeaderValues.map.set(signature, true);
-  warnedHeaderValues.queue.push(signature);
-  if (warnedHeaderValues.queue.length > MAX_WARNED_HEADER_VALUES) {
-    const oldest = warnedHeaderValues.queue.shift();
+  warningCache.map.set(signature, true);
+  warningCache.queue.push(signature);
+  if (warningCache.queue.length > MAX_WARNED_HEADER_VALUES) {
+    const oldest = warningCache.queue.shift();
     if (oldest) {
-      warnedHeaderValues.map.delete(oldest);
+      warningCache.map.delete(oldest);
     }
   }
   process.stderr.write(
