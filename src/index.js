@@ -1,8 +1,8 @@
 /**
- * api-stress-tester – public API
+ * @toufiqur-rahman-tamkin/api-stress-tester – public API
  *
  * Usage:
- *   import { stressTest } from 'api-stress-tester';
+ *   import { stressTest } from '@toufiqur-rahman-tamkin/api-stress-tester';
  *   const result = await stressTest({ url: '...', concurrency: 5000, duration: 30 });
  */
 export { runStressTest as stressTest } from './runner.js';

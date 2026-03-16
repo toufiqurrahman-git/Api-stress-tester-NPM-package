@@ -1,5 +1,5 @@
 {
-  "name": "api-stress-tester",
+  "name": "@toufiqur-rahman-tamkin/api-stress-tester",
   "version": "1.0.0",
   "description": "High-performance API stress testing and load testing tool capable of simulating up to 100k concurrent users",
   "type": "module",
@@ -45,6 +45,9 @@
   },
   "engines": {
     "node": ">=18.0.0"
+  },
+  "publishConfig": {
+    "access": "public"
   },
   "files": [
     "src/",

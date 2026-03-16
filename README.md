@@ -1,4 +1,4 @@
-# api-stress-tester
+# @toufiqur-rahman-tamkin/api-stress-tester
 
 High-performance API stress testing and load testing tool for Node.js.  
 Simulate up to **100,000 concurrent users** sending requests to your APIs.
@@ -19,13 +19,13 @@ Simulate up to **100,000 concurrent users** sending requests to your APIs.
 ## Installation
 
 ```bash
-npm install api-stress-tester
+npm install @toufiqur-rahman-tamkin/api-stress-tester
 ```
 
 Or run directly with `npx`:
 
 ```bash
-npx api-stress-tester config.json
+npx @toufiqur-rahman-tamkin/api-stress-tester config.json
 ```
 
 ---
@@ -54,7 +54,7 @@ Create a `config.json` file:
 Run the test:
 
 ```bash
-npx api-stress-tester config.json
+npx @toufiqur-rahman-tamkin/api-stress-tester config.json
 ```
 
 The tool will print a summary to stdout and append it to `stress-test-report.txt`.
@@ -64,7 +64,7 @@ The tool will print a summary to stdout and append it to `stress-test-report.txt
 ## Programmatic Usage
 
 ```js
-import { stressTest } from "api-stress-tester";
+import { stressTest } from "@toufiqur-rahman-tamkin/api-stress-tester";
 
 const summary = await stressTest({
   url: "https://api.example.com/users",
@@ -239,7 +239,7 @@ npm test
 ## How to Publish
 
 ```bash
-npm login
+npm login --auth-type=web
 npm publish
 ```
 

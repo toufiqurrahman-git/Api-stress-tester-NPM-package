@@ -4,7 +4,7 @@
  * CLI entry point for api-stress-tester.
  *
  * Usage:
- *   npx api-stress-tester config.json
+ *   npx @toufiqur-rahman-tamkin/api-stress-tester config.json
  *   node src/cli.js config.json
  */
 import { readFileSync } from 'node:fs';
