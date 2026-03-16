@@ -7,6 +7,7 @@
 import { Pool } from 'undici';
 
 const CONTROL_CHARS_REGEX = /[\0\r\n]/g;
+const MAX_WARNED_HEADER_VALUES = 100;
 
 export class HttpEngine {
   /**
@@ -173,6 +174,9 @@ function warnInvalidHeaderValue(key, value, warnedHeaderValues) {
   const signature = `${safeKey}:${type}`;
   if (warnedHeaderValues.has(signature)) {
     return;
+  }
+  if (warnedHeaderValues.size >= MAX_WARNED_HEADER_VALUES) {
+    warnedHeaderValues.clear();
   }
   warnedHeaderValues.add(signature);
   process.stderr.write(

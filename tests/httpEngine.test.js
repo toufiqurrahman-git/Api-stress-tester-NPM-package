@@ -72,4 +72,30 @@ describe('HttpEngine', () => {
 
     await engine.close();
   });
+
+  test('warns on unsupported header value types', async () => {
+    const engine = new HttpEngine({ baseUrl: 'http://localhost:9999' });
+    engine.pool.request = async () => ({
+      statusCode: 200,
+      headers: {},
+      body: { text: async () => '' },
+    });
+    const originalWrite = process.stderr.write;
+    const writes = [];
+    process.stderr.write = (message) => {
+      writes.push(String(message));
+      return true;
+    };
+
+    try {
+      await engine.request({
+        headers: { 'X-Invalid': { nested: true } },
+      });
+    } finally {
+      process.stderr.write = originalWrite;
+      await engine.close();
+    }
+
+    expect(writes.some((msg) => msg.includes('X-Invalid'))).toBe(true);
+  });
 });
