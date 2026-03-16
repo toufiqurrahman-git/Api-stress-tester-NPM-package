@@ -43,7 +43,7 @@ describe('HttpEngine', () => {
   test('request strips newline characters from headers', async () => {
     const engine = new HttpEngine({
       baseUrl: 'http://localhost:9999',
-      headers: { Authorization: 'Bearer token\r\n' },
+      headers: { 'Authorization\r\n': 'Bearer token\r\n' },
     });
     let capturedHeaders;
     engine.pool.request = async (opts) => {
@@ -56,12 +56,16 @@ describe('HttpEngine', () => {
     };
 
     await engine.request({
-      headers: { 'X-Test': 'line1\nline2' },
+      headers: {
+        'X-Test': 'line1\nline2',
+        'X-Multi': ['one\r', 'two\nthree'],
+      },
     });
 
     expect(capturedHeaders).toEqual({
       Authorization: 'Bearer token',
       'X-Test': 'line1line2',
+      'X-Multi': ['one', 'twothree'],
     });
 
     await engine.close();

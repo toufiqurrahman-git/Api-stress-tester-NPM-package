@@ -95,18 +95,29 @@ function normalizeHeaders(headers) {
     if (value === undefined || value === null) {
       continue;
     }
+    const normalizedKey = normalizeHeaderKey(key);
+    if (!normalizedKey) {
+      continue;
+    }
     if (Array.isArray(value)) {
       const cleaned = value
         .filter((entry) => entry !== undefined && entry !== null)
         .map((entry) => normalizeHeaderValue(entry));
       if (cleaned.length > 0) {
-        normalized[key] = cleaned;
+        normalized[normalizedKey] = cleaned;
       }
       continue;
     }
-    normalized[key] = normalizeHeaderValue(value);
+    normalized[normalizedKey] = normalizeHeaderValue(value);
   }
   return normalized;
+}
+
+function normalizeHeaderKey(value) {
+  if (typeof value !== 'string') {
+    return String(value);
+  }
+  return value.replace(/[\r\n]/g, '');
 }
 
 function normalizeHeaderValue(value) {
