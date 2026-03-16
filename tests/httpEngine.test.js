@@ -1,6 +1,7 @@
 /**
  * Tests for the HttpEngine (undici connection pooling).
  */
+import { jest } from '@jest/globals';
 import { HttpEngine } from '../src/core/httpEngine.js';
 
 describe('HttpEngine', () => {
@@ -38,5 +39,67 @@ describe('HttpEngine', () => {
   test('close() does not throw', async () => {
     const engine = new HttpEngine({ baseUrl: 'http://localhost:9999' });
     await expect(engine.close()).resolves.not.toThrow();
+  });
+
+  test('request strips newline characters from headers', async () => {
+    const engine = new HttpEngine({
+      baseUrl: 'http://localhost:9999',
+      headers: { 'Authorization\r\n': 'Bearer token\r\n' },
+    });
+    let capturedHeaders;
+    engine.pool.request = async (opts) => {
+      capturedHeaders = opts.headers;
+      return {
+        statusCode: 200,
+        headers: {},
+        body: { text: async () => '' },
+      };
+    };
+
+    await engine.request({
+      headers: {
+        'X-Test': 'line1\nline2',
+        'X-Multi': ['one\r', 'two\nthree', 'null\0value'],
+        'X-Null\0Key': 'value\0here',
+      },
+    });
+
+    expect(capturedHeaders).toEqual({
+      Authorization: 'Bearer token',
+      'X-Test': 'line1line2',
+      'X-Multi': ['one', 'twothree', 'nullvalue'],
+      'X-NullKey': 'valuehere',
+    });
+
+    await engine.close();
+  });
+
+  test('warns on unsupported header value types', async () => {
+    const engine = new HttpEngine({ baseUrl: 'http://localhost:9999' });
+    engine.pool.request = async () => ({
+      statusCode: 200,
+      headers: {},
+      body: { text: async () => '' },
+    });
+    const writes = [];
+    const writeSpy = jest
+      .spyOn(process.stderr, 'write')
+      .mockImplementation((...args) => {
+        writes.push(String(args[0]));
+        return true;
+      });
+
+    try {
+      await engine.request({
+        headers: { 'X-Invalid': { nested: true } },
+      });
+    } finally {
+      writeSpy.mockRestore();
+      await engine.close();
+    }
+
+    expect(
+      writes.some((msg) => msg.includes('X-Invalid') && msg.includes('object')),
+    ).toBe(true);
   });
 });

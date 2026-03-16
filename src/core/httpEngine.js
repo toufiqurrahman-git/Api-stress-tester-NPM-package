@@ -6,6 +6,9 @@
  */
 import { Pool } from 'undici';
 
+const CONTROL_CHARS_REGEX = /[\0\r\n]/g;
+const MAX_WARNED_HEADER_VALUES = 100;
+
 export class HttpEngine {
   /**
    * @param {object} options
@@ -31,6 +34,7 @@ export class HttpEngine {
     this.baseUrl = baseUrl;
     this.defaultHeaders = headers;
     this.timeout = timeout;
+    this.invalidHeaderWarningCache = { map: new Map(), queue: [] };
 
     this.pool = new Pool(baseUrl, {
       connections,
@@ -53,7 +57,10 @@ export class HttpEngine {
    * @returns {Promise<{ statusCode: number, headers: object, body: string, responseTime: number }>}
    */
   async request({ method = 'GET', path = '/', headers = {}, body = null } = {}) {
-    const mergedHeaders = { ...this.defaultHeaders, ...headers };
+    const mergedHeaders = normalizeHeaders(
+      { ...this.defaultHeaders, ...headers },
+      this.invalidHeaderWarningCache,
+    );
 
     const start = process.hrtime.bigint();
 
@@ -87,4 +94,96 @@ export class HttpEngine {
   async close() {
     await this.pool.close();
   }
+}
+
+function normalizeHeaders(headers, warningCache) {
+  const normalized = {};
+  for (const [key, value] of Object.entries(headers || {})) {
+    if (value === undefined || value === null) {
+      continue;
+    }
+    const normalizedKey = normalizeHeaderKey(key);
+    if (normalizedKey === null) {
+      continue;
+    }
+    if (Array.isArray(value)) {
+      const cleaned = [];
+      for (const entry of value) {
+        if (entry === undefined || entry === null) {
+          continue;
+        }
+        if (isValidHeaderValue(entry)) {
+          const cleanedEntry = normalizeHeaderValue(entry);
+          if (cleanedEntry !== null) {
+            cleaned.push(cleanedEntry);
+          }
+        } else {
+          warnInvalidHeaderValue(normalizedKey, entry, warningCache);
+        }
+      }
+      if (cleaned.length > 0) {
+        normalized[normalizedKey] = cleaned;
+      }
+      continue;
+    }
+
+    if (!isValidHeaderValue(value)) {
+      warnInvalidHeaderValue(normalizedKey, value, warningCache);
+      continue;
+    }
+
+    const cleanedValue = normalizeHeaderValue(value);
+    if (cleanedValue === null) {
+      continue;
+    }
+    normalized[normalizedKey] = cleanedValue;
+  }
+  return normalized;
+}
+
+function normalizeHeaderKey(value) {
+  if (typeof value !== 'string') {
+    return null;
+  }
+  const cleaned = value.replace(CONTROL_CHARS_REGEX, '');
+  return cleaned.length > 0 ? cleaned : null;
+}
+
+function normalizeHeaderValue(value) {
+  if (typeof value === 'string') {
+    const cleaned = value.replace(CONTROL_CHARS_REGEX, '');
+    return cleaned.length > 0 ? cleaned : null;
+  }
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  return null;
+}
+
+function isValidHeaderValue(value) {
+  return (
+    typeof value === 'string' ||
+    typeof value === 'number' ||
+    typeof value === 'boolean'
+  );
+}
+
+function warnInvalidHeaderValue(key, value, warningCache) {
+  const type = typeof value;
+  const safeKey = key;
+  const signature = `${safeKey}::${type}`;
+  if (warningCache.map.has(signature)) {
+    return;
+  }
+  warningCache.map.set(signature, true);
+  warningCache.queue.push(signature);
+  if (warningCache.queue.length > MAX_WARNED_HEADER_VALUES) {
+    const oldest = warningCache.queue.shift();
+    if (oldest) {
+      warningCache.map.delete(oldest);
+    }
+  }
+  process.stderr.write(
+    `[HttpEngine] Dropping header "${safeKey}" with unsupported value type "${type}".\n`,
+  );
 }
