@@ -113,5 +113,5 @@ function normalizeHeaderValue(value) {
   if (typeof value !== 'string') {
     return value;
   }
-  return value.replace(/[\r\n]+/g, '');
+  return value.replace(/[\r\n]/g, '');
 }
