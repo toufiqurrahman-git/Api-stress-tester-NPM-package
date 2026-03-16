@@ -110,6 +110,8 @@ function normalizeHeaders(headers) {
 }
 
 function normalizeHeaderValue(value) {
-  const asString = typeof value === 'string' ? value : String(value);
-  return asString.replace(/[\r\n]+/g, '');
+  if (typeof value !== 'string') {
+    return value;
+  }
+  return value.replace(/[\r\n]+/g, '');
 }
