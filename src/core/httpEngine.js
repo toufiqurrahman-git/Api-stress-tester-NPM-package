@@ -170,8 +170,8 @@ function isValidHeaderValue(value) {
 
 function warnInvalidHeaderValue(key, value, warningCache) {
   const type = typeof value;
-  const safeKey = key.replace(CONTROL_CHARS_REGEX, '');
-  const signature = `${safeKey}\0${type}`;
+  const safeKey = key;
+  const signature = `${safeKey}::${type}`;
   if (warningCache.map.has(signature)) {
     return;
   }
