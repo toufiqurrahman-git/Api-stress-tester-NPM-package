@@ -127,11 +127,10 @@ export async function runStressTest(config, options = {}) {
   summary.result = applyThresholds(summary, config.thresholds);
 
   // ── Report ────────────────────────────────────────────────────────
-  const writer = new ReportWriter({
-    reportPath: options.reportPath,
-    format: options.reportFormat || 'txt',
-  });
-  writer.write(config, summary);
+  const reportPath = options.reportPath || 'stress-test-report.txt';
+  const reportFormat = options.reportFormat || 'txt';
+  const writer = new ReportWriter(config, summary);
+  writer.write(reportPath, reportFormat);
 
   return summary;
 }

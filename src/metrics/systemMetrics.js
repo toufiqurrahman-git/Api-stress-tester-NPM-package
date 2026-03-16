@@ -90,6 +90,12 @@ export class SystemMetrics {
     return +((1 - idleDiff / totalDiff) * 100).toFixed(1);
   }
 
+  /**
+   * Get current network byte counters.
+   * Note: Node.js os.networkInterfaces() does not expose rx/tx byte counters
+   * in most environments, so this will typically return 0. The method is
+   * included for forward compatibility with environments that do expose them.
+   */
   _getNetworkBytes() {
     const ifaces = networkInterfaces();
     let rx = 0;
