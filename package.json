@@ -1,6 +1,6 @@
 {
   "name": "express-api-stress-tester",
-  "version": "2.0.2",
+  "version": "2.0.3",
   "description": "High-performance distributed API stress testing platform for Express.js APIs — simulate up to 10M concurrent virtual users",
   "type": "module",
   "main": "src/index.js",
@@ -11,7 +11,7 @@
     "express-api-stress-tester": "src/cli.js"
   },
   "scripts": {
-    "test": "node --experimental-vm-modules node_modules/.bin/jest --forceExit",
+    "test": "node --experimental-vm-modules ./node_modules/jest/bin/jest.js --forceExit",
     "stress": "node src/cli.js"
   },
   "keywords": [

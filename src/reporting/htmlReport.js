@@ -32,7 +32,7 @@ export function generateHtmlReport(config, summary) {
   ];
 
   const configRows = [
-    ['API URL', config.url || 'N/A'],
+    ['API URL', config.url || config.baseUrl || 'N/A'],
     ['Method', (config.method || 'GET').toUpperCase()],
     ['Concurrent Users', config.concurrency || 1],
     ...(config.duration ? [['Duration', `${config.duration}s`]] : []),

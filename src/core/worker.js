@@ -159,12 +159,13 @@ function getEndpointMetrics(endpoint) {
       maxLatency: -Infinity,
       responseTimes: [],
       sampleCount: 0,
+      statusCodes: {},
     };
   }
   return perEndpoint[endpoint];
 }
 
-function recordEndpoint(endpoint, elapsedMs, isError) {
+function recordEndpoint(endpoint, elapsedMs, isError, status) {
   const metrics = getEndpointMetrics(endpoint);
   metrics.totalRequests++;
   metrics.totalResponseTime += elapsedMs;
@@ -174,6 +175,9 @@ function recordEndpoint(endpoint, elapsedMs, isError) {
     metrics.errorCount++;
   } else {
     metrics.successCount++;
+  }
+  if (status) {
+    metrics.statusCodes[status] = (metrics.statusCodes[status] || 0) + 1;
   }
   metrics.sampleCount++;
   if (metrics.responseTimes.length < MAX_SAMPLE_SIZE) {
@@ -203,7 +207,7 @@ function recordRequestMetrics({ endpointKey, elapsedMs, isError, status }) {
     successCount++;
   }
 
-  recordEndpoint(endpointKey, elapsedMs, isError);
+  recordEndpoint(endpointKey, elapsedMs, isError, status);
 }
 
 async function applyHeaderPlugins(headers) {

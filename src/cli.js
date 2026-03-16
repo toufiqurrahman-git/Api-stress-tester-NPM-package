@@ -48,6 +48,40 @@ function printSummary(summary) {
   console.log(`  Result:          ${resultColor(summary.result)}`);
   console.log(chalk.bold.cyan('═══════════════════════════════════════════'));
   console.log('');
+
+  if (summary.statusCodes && typeof summary.statusCodes === 'object') {
+    const codes = Object.entries(summary.statusCodes)
+      .filter(([, c]) => Number(c) > 0)
+      .sort((a, b) => Number(b[1]) - Number(a[1]))
+      .map(([code, count]) => `${code}:${count}`)
+      .join(' ');
+    if (codes) {
+      console.log(chalk.bold('Status Codes:'));
+      console.log(`  ${codes}`);
+      console.log('');
+    }
+  }
+
+  if (summary.perEndpoint && typeof summary.perEndpoint === 'object' && Object.keys(summary.perEndpoint).length > 0) {
+    console.log(chalk.bold('Per-Endpoint Metrics:'));
+    const entries = Object.entries(summary.perEndpoint).sort(
+      (a, b) => (b[1].requestsPerSec || 0) - (a[1].requestsPerSec || 0),
+    );
+    for (const [endpoint, m] of entries) {
+      const codes = m.statusCodes && typeof m.statusCodes === 'object'
+        ? Object.entries(m.statusCodes)
+            .filter(([, c]) => Number(c) > 0)
+            .sort((x, y) => Number(y[1]) - Number(x[1]))
+            .slice(0, 6)
+            .map(([code, count]) => `${code}:${count}`)
+            .join(' ')
+        : '';
+      console.log(
+        `  ${endpoint} | rps=${m.requestsPerSec ?? 0} avg=${m.avgResponseTime ?? 0}ms p95=${m.p95 ?? 0}ms err=${m.errorRate ?? 0}%${codes ? ` codes=${codes}` : ''}`,
+      );
+    }
+    console.log('');
+  }
 }
 
 async function runCommand(configPath, opts) {

@@ -21,6 +21,9 @@ export class MetricsCollector {
     this.responseTimes = [];
     this._sampleCount = 0;
     this.perEndpoint = new Map();
+
+    // Best-effort aggregate status codes across all requests
+    this.statusCodes = {};
   }
 
   start() {
@@ -71,6 +74,14 @@ export class MetricsCollector {
 
     if (partial.responseTimes) {
       this.mergeResponseTimes(partial.responseTimes);
+    }
+
+    if (partial.statusCodes && typeof partial.statusCodes === 'object') {
+      for (const [code, count] of Object.entries(partial.statusCodes)) {
+        const n = Number(count) || 0;
+        if (!n) continue;
+        this.statusCodes[code] = (this.statusCodes[code] || 0) + n;
+      }
     }
 
     if (partial.perEndpoint) {
@@ -186,6 +197,7 @@ export class MetricsCollector {
       result: passed ? 'PASSED' : 'FAILED',
       elapsedSeconds: elapsed.toFixed(1),
       perEndpoint: this._buildEndpointSummaries(elapsed),
+      statusCodes: { ...this.statusCodes },
     };
   }
 

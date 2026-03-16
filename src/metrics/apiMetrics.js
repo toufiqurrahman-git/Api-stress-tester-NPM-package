@@ -13,6 +13,7 @@ export class ApiMetrics {
     this.maxLatency = -Infinity;
     this.responseTimes = [];
     this._sampleCount = 0;
+    this.statusCodes = {};
   }
 
   record(responseTimeMs, isError) {
@@ -54,6 +55,14 @@ export class ApiMetrics {
 
     if (partial.responseTimes) {
       this.mergeResponseTimes(partial.responseTimes);
+    }
+
+    if (partial.statusCodes && typeof partial.statusCodes === 'object') {
+      for (const [code, count] of Object.entries(partial.statusCodes)) {
+        const n = Number(count) || 0;
+        if (!n) continue;
+        this.statusCodes[code] = (this.statusCodes[code] || 0) + n;
+      }
     }
   }
 
@@ -111,6 +120,7 @@ export class ApiMetrics {
       maxLatency: maxLat,
       errorRate: parseFloat(errorRate),
       successRate: parseFloat(successRate),
+      statusCodes: { ...this.statusCodes },
     };
   }
 }

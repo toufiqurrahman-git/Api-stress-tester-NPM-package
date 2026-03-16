@@ -26,12 +26,29 @@ export function writeReport(config, summary, reportPath) {
 
 function buildTxtReport(config, summary) {
   const divider = '='.repeat(50);
+  const apiUrl = config.url || config.baseUrl || 'N/A';
+  const method = (() => {
+    if (config.method) return String(config.method).toUpperCase();
+    if (Array.isArray(config.routes) && config.routes.length === 1 && config.routes[0]?.method) {
+      return String(config.routes[0].method).toUpperCase();
+    }
+    if (Array.isArray(config.routes) && config.routes.length > 1) return 'MULTI';
+    return 'GET';
+  })();
+  const statusCodesLine = summary.statusCodes && typeof summary.statusCodes === 'object'
+    ? Object.entries(summary.statusCodes)
+        .filter(([, c]) => Number(c) > 0)
+        .sort((a, b) => Number(b[1]) - Number(a[1]))
+        .slice(0, 8)
+        .map(([code, c]) => `${code}:${c}`)
+        .join(' ')
+    : '';
   const lines = [
     divider,
     `  API Stress Test Report`,
     divider,
-    `API URL:            ${config.url}`,
-    `Method:             ${(config.method || 'GET').toUpperCase()}`,
+    `API URL:            ${apiUrl}`,
+    `Method:             ${method}`,
     `Concurrent Users:   ${config.concurrency || 1}`,
     `Duration (s):       ${summary.elapsedSeconds}`,
     `Total Requests:     ${summary.totalRequests}`,
@@ -45,6 +62,7 @@ function buildTxtReport(config, summary) {
     `Success Rate:       ${summary.successRate}%`,
     `CPU Usage:          ${summary.cpuPercent}%`,
     `Memory Usage:       ${summary.memoryMB}MB`,
+    ...(statusCodesLine ? [`Status Codes:       ${statusCodesLine}`] : []),
     `Result:             ${summary.result}`,
     divider,
     ...(buildEndpointLines(summary.perEndpoint) || []),
