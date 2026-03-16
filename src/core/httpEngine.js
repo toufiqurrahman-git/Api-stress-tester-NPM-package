@@ -102,27 +102,35 @@ function normalizeHeaders(headers) {
     if (Array.isArray(value)) {
       const cleaned = value
         .filter((entry) => entry !== undefined && entry !== null)
-        .map((entry) => normalizeHeaderValue(entry));
+        .map((entry) => normalizeHeaderValue(entry))
+        .filter((entry) => entry !== undefined && entry !== null);
       if (cleaned.length > 0) {
         normalized[normalizedKey] = cleaned;
       }
       continue;
     }
-    normalized[normalizedKey] = normalizeHeaderValue(value);
+    const cleanedValue = normalizeHeaderValue(value);
+    if (cleanedValue === undefined || cleanedValue === null) {
+      continue;
+    }
+    normalized[normalizedKey] = cleanedValue;
   }
   return normalized;
 }
 
 function normalizeHeaderKey(value) {
   if (typeof value !== 'string') {
-    return String(value);
+    return '';
   }
   return value.replace(/[\r\n]/g, '');
 }
 
 function normalizeHeaderValue(value) {
-  if (typeof value !== 'string') {
-    return value;
+  if (typeof value === 'string') {
+    return value.replace(/[\r\n]/g, '');
   }
-  return value.replace(/[\r\n]/g, '');
+  if (typeof value === 'number' || typeof value === 'boolean') {
+    return String(value);
+  }
+  return null;
 }
