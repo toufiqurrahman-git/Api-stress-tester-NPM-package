@@ -96,7 +96,7 @@ function normalizeHeaders(headers) {
       continue;
     }
     const normalizedKey = normalizeHeaderKey(key);
-    if (!normalizedKey) {
+    if (normalizedKey === null) {
       continue;
     }
     if (Array.isArray(value)) {
@@ -120,14 +120,15 @@ function normalizeHeaders(headers) {
 
 function normalizeHeaderKey(value) {
   if (typeof value !== 'string') {
-    return '';
+    return null;
   }
-  return value.replace(/[\r\n]/g, '');
+  const cleaned = value.replace(/[\0\r\n]/g, '');
+  return cleaned.length > 0 ? cleaned : null;
 }
 
 function normalizeHeaderValue(value) {
   if (typeof value === 'string') {
-    return value.replace(/[\r\n]/g, '');
+    return value.replace(/[\0\r\n]/g, '');
   }
   if (typeof value === 'number' || typeof value === 'boolean') {
     return String(value);
