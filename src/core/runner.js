@@ -49,6 +49,7 @@ export async function runStressTest(config, options = {}) {
       const parsed = new URL(config.url);
       config.baseUrl = parsed.origin;
     } catch {
+      log(`Warning: could not parse "${config.url}" as URL, using as-is for baseUrl`);
       config.baseUrl = config.url;
     }
   }

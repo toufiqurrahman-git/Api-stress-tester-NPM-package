@@ -40,7 +40,9 @@ export class ReportWriter {
     const report = JSON.stringify({ config, summary }, null, 2);
     try {
       writeFileSync(this.reportPath, report);
-    } catch { /* ignore */ }
+    } catch (err) {
+      process.stderr.write(`Failed to write JSON report: ${err.message}\n`);
+    }
     return report;
   }
 
@@ -55,7 +57,9 @@ ${Object.entries(summary).map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`)
 </body></html>`;
     try {
       writeFileSync(this.reportPath, html);
-    } catch { /* ignore */ }
+    } catch (err) {
+      process.stderr.write(`Failed to write HTML report: ${err.message}\n`);
+    }
     return html;
   }
 }

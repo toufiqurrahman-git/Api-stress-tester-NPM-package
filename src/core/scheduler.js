@@ -41,10 +41,17 @@ export class Scheduler {
 
     // Single URL mode (v1 backwards compat)
     if (cfg.url) {
-      const url = new URL(cfg.url);
+      let parsedPath = '/';
+      try {
+        const url = new URL(cfg.url);
+        parsedPath = url.pathname + url.search;
+      } catch {
+        // If URL is not absolute (e.g. just a path), use it as-is
+        parsedPath = cfg.url;
+      }
       return [
         {
-          path: url.pathname + url.search,
+          path: parsedPath,
           method: (cfg.method || 'GET').toUpperCase(),
           headers: cfg.headers || {},
           payload: cfg.payload ?? cfg.body ?? null,
