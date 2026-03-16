@@ -101,19 +101,18 @@ function normalizeHeaders(headers) {
     }
     if (Array.isArray(value)) {
       const cleaned = value
-        .filter((entry) => entry !== undefined && entry !== null)
         .map((entry) => normalizeHeaderValue(entry))
         .filter((entry) => entry !== undefined && entry !== null);
       if (cleaned.length > 0) {
         normalized[normalizedKey] = cleaned;
       }
-      continue;
+    } else {
+      const cleanedValue = normalizeHeaderValue(value);
+      if (cleanedValue === undefined || cleanedValue === null) {
+        continue;
+      }
+      normalized[normalizedKey] = cleanedValue;
     }
-    const cleanedValue = normalizeHeaderValue(value);
-    if (cleanedValue === undefined || cleanedValue === null) {
-      continue;
-    }
-    normalized[normalizedKey] = cleanedValue;
   }
   return normalized;
 }
