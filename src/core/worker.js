@@ -94,6 +94,24 @@ let maxLatency = -Infinity;
 const statusCodes = {};
 const perEndpoint = {};
 
+function normalizeBaseForRelativeUrlResolution(base, maybeRelativePath) {
+  if (!base || !maybeRelativePath) return base;
+  if (maybeRelativePath.startsWith('http://') || maybeRelativePath.startsWith('https://')) return base;
+  if (maybeRelativePath.startsWith('/')) return base;
+
+  try {
+    const parsedBase = new URL(base);
+    if (parsedBase.pathname && !parsedBase.pathname.endsWith('/')) {
+      parsedBase.pathname = `${parsedBase.pathname}/`;
+      return parsedBase.toString();
+    }
+  } catch {
+    // ignore
+  }
+
+  return base;
+}
+
 /**
  * Resolve the full URL for a route.
  */
@@ -102,7 +120,8 @@ function resolveUrl(route) {
   const path = route.path || route.url || '';
   try {
     if (path) {
-      return new URL(path, base).toString();
+      const normalizedBase = normalizeBaseForRelativeUrlResolution(base, path);
+      return new URL(path, normalizedBase).toString();
     }
     if (base) {
       return new URL(base).toString();
@@ -326,7 +345,9 @@ async function executeRequest(task) {
       parsed = new URL(targetUrl);
     } catch {
       try {
-        parsed = new URL(targetUrl, config.baseUrl || config.url);
+        const base = config.baseUrl || config.url;
+        const normalizedBase = normalizeBaseForRelativeUrlResolution(base, targetUrl);
+        parsed = new URL(targetUrl, normalizedBase);
       } catch (err) {
         throw new Error(
           `Failed to resolve URL "${targetUrl}" with base "${config.baseUrl || config.url}": ${err.message}`,
