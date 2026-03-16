@@ -6,6 +6,8 @@
  */
 import { Pool } from 'undici';
 
+const CONTROL_CHARS_REGEX = /[\0\r\n]/g;
+
 export class HttpEngine {
   /**
    * @param {object} options
@@ -142,13 +144,13 @@ function normalizeHeaderKey(value) {
   if (typeof value !== 'string') {
     return null;
   }
-  const cleaned = value.replace(/[\0\r\n]/g, '');
+  const cleaned = value.replace(CONTROL_CHARS_REGEX, '');
   return cleaned.length > 0 ? cleaned : null;
 }
 
 function normalizeHeaderValue(value) {
   if (typeof value === 'string') {
-    const cleaned = value.replace(/[\0\r\n]/g, '');
+    const cleaned = value.replace(CONTROL_CHARS_REGEX, '');
     return cleaned.length > 0 ? cleaned : null;
   }
   if (typeof value === 'number' || typeof value === 'boolean') {
@@ -167,7 +169,7 @@ function isValidHeaderValue(value) {
 
 function warnInvalidHeaderValue(key, value, warnedHeaderValues) {
   const type = typeof value;
-  const safeKey = key.replace(/[\0\r\n]/g, '');
+  const safeKey = key.replace(CONTROL_CHARS_REGEX, '');
   const signature = `${safeKey}:${type}`;
   if (warnedHeaderValues.has(signature)) {
     return;
