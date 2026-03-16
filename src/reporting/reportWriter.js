@@ -1,65 +1,102 @@
 /**
- * Re-export v1 logger/report functions for v2 module layout.
+ * Multi-format report writer (v2).
+ * Backward-compatible v1 exports + new ReportWriter class.
  */
-import { writeFileSync } from 'node:fs';
-import { log, writeReport } from '../logger.js';
+import { writeFileSync, appendFileSync } from 'node:fs';
+import { generateHtmlReport } from './htmlReport.js';
 
-export { log, writeReport };
+const REPORT_FILE = 'stress-test-report.txt';
 
-/**
- * ReportWriter — thin wrapper around the v1 writeReport function
- * that supports multiple output formats.
- */
+export function log(message) {
+  const ts = new Date().toISOString();
+  process.stdout.write(`[${ts}] ${message}\n`);
+}
+
+export function writeReport(config, summary, reportPath) {
+  const filePath = reportPath || REPORT_FILE;
+  const report = buildTxtReport(config, summary);
+  try {
+    appendFileSync(filePath, report + '\n');
+  } catch (err) {
+    process.stderr.write(`Failed to write report: ${err.message}\n`);
+  }
+  process.stdout.write(report + '\n');
+  return report;
+}
+
+function buildTxtReport(config, summary) {
+  const divider = '='.repeat(50);
+  const lines = [
+    divider,
+    `  API Stress Test Report`,
+    divider,
+    `API URL:            ${config.url}`,
+    `Method:             ${(config.method || 'GET').toUpperCase()}`,
+    `Concurrent Users:   ${config.concurrency || 1}`,
+    `Duration (s):       ${summary.elapsedSeconds}`,
+    `Total Requests:     ${summary.totalRequests}`,
+    `Requests/sec:       ${summary.requestsPerSec}`,
+    `Avg Response Time:  ${summary.avgResponseTime}ms`,
+    ...(summary.p95 !== undefined ? [`P95 Latency:        ${summary.p95}ms`] : []),
+    ...(summary.p99 !== undefined ? [`P99 Latency:        ${summary.p99}ms`] : []),
+    ...(summary.minLatency !== undefined ? [`Min Latency:        ${summary.minLatency}ms`] : []),
+    ...(summary.maxLatency !== undefined ? [`Max Latency:        ${summary.maxLatency}ms`] : []),
+    `Error Rate:         ${summary.errorRate}%`,
+    `Success Rate:       ${summary.successRate}%`,
+    `CPU Usage:          ${summary.cpuPercent}%`,
+    `Memory Usage:       ${summary.memoryMB}MB`,
+    `Result:             ${summary.result}`,
+    divider,
+    '',
+  ];
+  return lines.join('\n');
+}
+
 export class ReportWriter {
-  constructor(options = {}) {
-    this.reportPath = options.reportPath || 'stress-test-report.txt';
-    this.format = options.format || 'txt';
+  constructor(config, summary) {
+    this.config = config;
+    this.summary = summary;
   }
 
-  /**
-   * Generate and write a report.
-   * @param {object} config - test configuration
-   * @param {object} summary - metrics summary
-   * @returns {string} the report content
-   */
-  write(config, summary) {
-    if (this.format === 'json') {
-      return this._writeJson(config, summary);
-    }
-    if (this.format === 'html') {
-      return this._writeHtml(config, summary);
-    }
-    return this._writeTxt(config, summary);
-  }
-
-  _writeTxt(config, summary) {
-    return writeReport(config, summary, this.reportPath);
-  }
-
-  _writeJson(config, summary) {
-    const report = JSON.stringify({ config, summary }, null, 2);
+  writeTxt(filePath) {
+    const report = buildTxtReport(this.config, this.summary);
     try {
-      writeFileSync(this.reportPath, report);
+      writeFileSync(filePath, report);
+    } catch (err) {
+      process.stderr.write(`Failed to write TXT report: ${err.message}\n`);
+    }
+    return report;
+  }
+
+  writeJson(filePath) {
+    const report = JSON.stringify({ config: this.config, summary: this.summary }, null, 2);
+    try {
+      writeFileSync(filePath, report);
     } catch (err) {
       process.stderr.write(`Failed to write JSON report: ${err.message}\n`);
     }
     return report;
   }
 
-  _writeHtml(config, summary) {
-    const html = `<!DOCTYPE html>
-<html><head><title>Stress Test Report</title></head>
-<body>
-<h1>API Stress Test Report</h1>
-<table>
-${Object.entries(summary).map(([k, v]) => `<tr><td>${k}</td><td>${v}</td></tr>`).join('\n')}
-</table>
-</body></html>`;
+  writeHtml(filePath) {
+    const html = generateHtmlReport(this.config, this.summary);
     try {
-      writeFileSync(this.reportPath, html);
+      writeFileSync(filePath, html);
     } catch (err) {
       process.stderr.write(`Failed to write HTML report: ${err.message}\n`);
     }
     return html;
+  }
+
+  write(filePath, format) {
+    switch (format) {
+      case 'json':
+        return this.writeJson(filePath);
+      case 'html':
+        return this.writeHtml(filePath);
+      case 'txt':
+      default:
+        return this.writeTxt(filePath);
+    }
   }
 }
